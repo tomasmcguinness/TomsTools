@@ -1,0 +1,355 @@
+﻿<html>
+    <body>
+<div class="text-center">
+    <input id="file" type="file" />
+    <input type="number" id="batteryCapacity" value="7" />
+    <input type="button" onclick="processFile()" value="Process" />
+    <div>
+        <h2>Usage for <span id="startDate"></span> to <span id="endDate"></span> (<span id="dayCount"></span>)</h2>
+        <span id="totalUsage" ></span> | <span id="offPeakUsage"></span> | <span id="peakUsage"></span>
+    </div>
+    <div>
+        <h2>Costs</h2>
+        <span id="totalCost" ></span> |  <span id="offPeakCost" ></span>  |  <span id="peakCost" ></span> 
+    </div>
+    <br />
+    <br />
+            <table id="consumptionTable" border="1" cellspacing="2">
+                <thead>
+                    <tr>
+                        <td>Date</td>
+                        <td>Battery SOD</td>
+                        <td>Off Peak</td>
+                        <td>Off Peak Total</td>
+                        <td>Peak</td>
+                        <td>Total</td>
+                        <td>Peak Battery</td>
+                        <td>Peak Grid</td>
+                        <td>Battery EOD</td>
+                        <td>Off Peak Cost</td>
+                        <td>Peak Cost</td>
+                        <td>Total Cost</td>
+                        </tr>
+                        </thead>
+                <tbody>
+                </tbody>
+            </table>
+</div>
+
+<script type="text/javascript">
+    function getBatteryCapacity() {
+        let capacity = parseFloat(document.getElementById('batteryCapacity').value);
+        return capacity;
+    }
+
+    class DailyUsage {
+        constructor(date, usage, currentBatteryCharge) {
+            this.date = date;
+            this.usage = usage;
+            this.currentBatteryCharge = currentBatteryCharge;
+            this.totalHouseConsumption = 0;
+            this.totalHousePeakConsumption = 0;
+            this.totalHouseOffPeakConsumption = 0;
+
+            usage.forEach(e => {
+                this.totalHouseConsumption += e.amount;
+
+                if(e.isOffPeak) {
+                    this.totalHouseOffPeakConsumption += e.amount;
+                } else {
+                    this.totalHousePeakConsumption += e.amount;
+                }
+            });
+
+            console.log("Day " + this.date.toDateString() + " created with " + this.totalHouseConsumption.toFixed(1) + "kWh usage (" + this.totalHouseOffPeakConsumption + " & " + this.totalHousePeakConsumption + ") and " + this.currentBatteryCharge.toFixed(1) + "kWh in the battery");
+        }
+
+        get startingBatteryCharge() {
+            return this.currentBatteryCharge;
+        }
+
+        get batteryChargeRequired() {
+            return getBatteryCapacity() - this.currentBatteryCharge;
+        }
+
+        get totalUsage() {
+            return this.totalHouseConsumption;
+        }
+
+        get peakUsage() {
+             return this.totalHousePeakConsumption;
+        }
+
+        get offPeakUsage() {
+             return this.totalHouseOffPeakConsumption;
+        }
+
+        get totalOffPeakUsage() {
+            return this.offPeakUsage + this.batteryChargeRequired;
+        }
+
+        get peakUsageCoveredByBattery() {
+            if(this.totalHousePeakConsumption < getBatteryCapacity()) {
+                return this.totalHousePeakConsumption;
+            } else {
+                return getBatteryCapacity();
+            }
+        }
+
+        get peakUsageCoveredByGrid() {
+            if(this.totalHousePeakConsumption > getBatteryCapacity()) {
+                return this.totalHousePeakConsumption - getBatteryCapacity();
+            } else {
+                return 0;
+            }
+        }
+
+        get endingBatteryCharge() {
+            if(getBatteryCapacity() > this.totalHousePeakConsumption) {
+                return getBatteryCapacity() - this.totalHousePeakConsumption;
+            } else {
+                return 0;
+            }
+        }
+
+        get totalOffPeakCost() {
+            return this.totalOffPeakUsage * 0.075;
+        }
+
+        get totalPeakCost() {
+            return this.peakUsageCoveredByGrid * 0.302;
+        }
+
+        get totalCost() {
+            return this.totalOffPeakCost + this.totalPeakCost;
+        }
+    }
+
+    class Usage {
+
+        constructor(a, s, e) {
+            this.amount = parseFloat(a);
+            this.startTime = new Date(s.trim());
+            this.endTime = new Date(e.trim());
+        }
+
+        get isOffPeak() {
+            let startMinutes = (this.startTime.getHours() * 60) + this.startTime.getMinutes();
+            let endMinutes = (this.endTime.getHours() * 60) + this.endTime.getMinutes();
+            let isOffPeak = startMinutes >= 30 && startMinutes < 270;
+            
+            return isOffPeak;
+        }
+    }
+
+    function processFile() {
+
+        let usageEntries = new Array();
+
+        var tbodyRef = document.getElementById('consumptionTable').getElementsByTagName('tbody')[0];
+
+        for(var i = 0; i < tbodyRef.rows.length; i++)
+        {
+            tbodyRef.deleteRow(-1);
+        }
+    
+        var element = document.getElementById("file");
+
+        var reader = new FileReader();
+        
+        reader.onload = function(event) {
+
+            var entries = CSVToArray(event.target.result);
+            var passedFirstRow = false;
+
+            var currentDay = null; 
+            var currentDate = new Date();
+            var usagesForCurrentDay = [];
+            var days = [];
+
+            entries.forEach(e => {
+
+                if(!passedFirstRow) {
+                    passedFirstRow = true;
+                    return;
+                }
+
+                if(e.length === 3) {
+                    let usage = new Usage(e[0],e[1],e[2]);
+                    usageEntries.push(usage);
+
+                    let d = new Date(e[1].trim());
+                    let usageDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+                    usagesForCurrentDay.push(usage);
+
+                    if(currentDate.getTime() !== usageDate.getTime()) {
+                        currentDate = usageDate;
+                        
+                        if(currentDay !== null) {
+                            // Log this info to a table
+                            //
+                            var tbodyRef = document.getElementById('consumptionTable').getElementsByTagName('tbody')[0];
+
+                            var row = tbodyRef.insertRow();
+                            
+                            var cell1 = row.insertCell();
+                            var cell2 = row.insertCell();
+                            var cell3 = row.insertCell();
+                            var cell4 = row.insertCell();
+                            var cell5 = row.insertCell();
+                            var cell6 = row.insertCell();
+                            var cell7 = row.insertCell();
+                            var cell8 = row.insertCell();
+                            var cell9 = row.insertCell();
+                            var cell10 = row.insertCell();
+                            var cell11 = row.insertCell();
+                            var cell12 = row.insertCell();
+                            
+                            cell1.innerHTML = currentDate.toDateString();
+                            cell2.innerHTML = currentDay.startingBatteryCharge.toFixed(1);
+                            cell3.innerHTML = currentDay.offPeakUsage.toFixed(1);
+                            cell4.innerHTML = currentDay.totalOffPeakUsage.toFixed(1);
+                            cell5.innerHTML = currentDay.peakUsage.toFixed(1);
+                            cell6.innerHTML = currentDay.totalUsage.toFixed(1);
+                            cell7.innerHTML = currentDay.peakUsageCoveredByBattery.toFixed(1); // TODO Add a percentage
+                            cell8.innerHTML = currentDay.peakUsageCoveredByGrid.toFixed(1); // TODO Add a percentage
+                            cell9.innerHTML = currentDay.endingBatteryCharge.toFixed(1);
+                            cell10.innerHTML = "£" + currentDay.totalOffPeakCost.toFixed(2);
+                            cell11.innerHTML = "£" + currentDay.totalPeakCost.toFixed(2);
+                            cell12.innerHTML = "£" + currentDay.totalCost.toFixed(2);
+
+                            // Record the day and create a new one. Reset everything.
+                            //
+                            days.push(currentDay)
+                        }
+                        
+                        currentDay = new DailyUsage(currentDate, usagesForCurrentDay, currentDay == null ? 0 : currentDay.endingBatteryCharge);
+                        usagesForCurrentDay = [];
+                    } 
+                }
+            });
+
+            var runningTotal = 0;
+            var offPeakTotal = 0;
+            var peakTotal = 0;
+            var totalCost = 0;
+            var totalOffPeakCost = 0;
+            var totalPeakCost = 0;
+
+            days.forEach(d => {
+                    runningTotal += d.totalUsage;
+                    offPeakTotal += d.totalOffPeakUsage;
+                    peakTotal += d.peakUsageCoveredByGrid;
+                    totalCost += d.totalCost;
+                    totalOffPeakCost += d.totalOffPeakCost;
+                    totalPeakCost += d.totalPeakCost;
+            });
+
+            document.getElementById("totalUsage").innerText = Math.round(runningTotal) + "kWh";
+            document.getElementById("offPeakUsage").innerText = Math.round(offPeakTotal) + "kWh";
+            document.getElementById("peakUsage").innerText = Math.round(peakTotal) + "kWh";
+            document.getElementById("totalCost").innerText = "£" + totalCost.toFixed(2);
+            document.getElementById("offPeakCost").innerText = "£" + totalOffPeakCost.toFixed(2);
+            document.getElementById("peakCost").innerText = "£" + totalPeakCost.toFixed(2);
+
+            document.getElementById("startDate").innerText = days[0].date.toDateString();
+            document.getElementById("endDate").innerText = days[days.length - 1].date.toDateString();
+            document.getElementById("dayCount").innerText = days.length;
+
+        };
+
+        reader.readAsText(element.files[0]);
+    }
+
+    // ref: http://stackoverflow.com/a/1293163/2343
+    // This will parse a delimited string into an array of
+    // arrays. The default delimiter is the comma, but this
+    // can be overriden in the second argument.
+    function CSVToArray(strData, strDelimiter){
+        // Check to see if the delimiter is defined. If not,
+        // then default to comma.
+        strDelimiter = (strDelimiter || ",");
+
+        // Create a regular expression to parse the CSV values.
+        var objPattern = new RegExp(
+            (
+                // Delimiters.
+                "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+
+                // Quoted fields.
+                "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+
+                // Standard fields.
+                "([^\"\\" + strDelimiter + "\\r\\n]*))"
+            ),
+            "gi"
+            );
+
+
+        // Create an array to hold our data. Give the array
+        // a default empty first row.
+        var arrData = [[]];
+
+        // Create an array to hold our individual pattern
+        // matching groups.
+        var arrMatches = null;
+
+
+        // Keep looping over the regular expression matches
+        // until we can no longer find a match.
+        while (arrMatches = objPattern.exec( strData )){
+
+            // Get the delimiter that was found.
+            var strMatchedDelimiter = arrMatches[ 1 ];
+
+            // Check to see if the given delimiter has a length
+            // (is not the start of string) and if it matches
+            // field delimiter. If id does not, then we know
+            // that this delimiter is a row delimiter.
+            if (
+                strMatchedDelimiter.length &&
+                strMatchedDelimiter !== strDelimiter
+                ){
+
+                // Since we have reached a new row of data,
+                // add an empty row to our data array.
+                arrData.push( [] );
+
+            }
+
+            var strMatchedValue;
+
+            // Now that we have our delimiter out of the way,
+            // let's check to see which kind of value we
+            // captured (quoted or unquoted).
+            if (arrMatches[ 2 ]){
+
+                // We found a quoted value. When we capture
+                // this value, unescape any double quotes.
+                strMatchedValue = arrMatches[ 2 ].replace(
+                    new RegExp( "\"\"", "g" ),
+                    "\""
+                    );
+
+            } else {
+
+                // We found a non-quoted value.
+                strMatchedValue = arrMatches[ 3 ];
+
+            }
+
+
+            // Now that we have our value string, let's add
+            // it to the data array.
+            arrData[ arrData.length - 1 ].push( strMatchedValue );
+        }
+
+        // Return the parsed data.
+        return( arrData );
+    }
+
+</script>
+
+<body>
+    </html>
