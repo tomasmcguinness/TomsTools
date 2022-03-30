@@ -1,355 +1,507 @@
-﻿<html>
-    <body>
-<div class="text-center">
-    <input id="file" type="file" />
-    <input type="number" id="batteryCapacity" value="7" />
-    <input type="button" onclick="processFile()" value="Process" />
-    <div>
-        <h2>Usage for <span id="startDate"></span> to <span id="endDate"></span> (<span id="dayCount"></span>)</h2>
-        <span id="totalUsage" ></span> | <span id="offPeakUsage"></span> | <span id="peakUsage"></span>
-    </div>
-    <div>
-        <h2>Costs</h2>
-        <span id="totalCost" ></span> |  <span id="offPeakCost" ></span>  |  <span id="peakCost" ></span> 
-    </div>
-    <br />
-    <br />
-            <table id="consumptionTable" border="1" cellspacing="2">
-                <thead>
-                    <tr>
-                        <td>Date</td>
-                        <td>Battery SOD</td>
-                        <td>Off Peak</td>
-                        <td>Off Peak Total</td>
-                        <td>Peak</td>
-                        <td>Total</td>
-                        <td>Peak Battery</td>
-                        <td>Peak Grid</td>
-                        <td>Battery EOD</td>
-                        <td>Off Peak Cost</td>
-                        <td>Peak Cost</td>
-                        <td>Total Cost</td>
+<html>
+<head>
+    <title>Battery Savings Calculator</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,"></script>
+</head>
+<body>
+    <form class="space-y-8 divide-y divide-gray-200  lg:px-8 mt-10">
+        <div class="space-y-8 divide-y divide-gray-200">
+            <div>
+                <div>
+                    <h1 class="text-lg leading-6 font-medium text-gray-900">Battery Savings Calculator</h1>
+                    <p class="mt-1 text-sm text-gray-500">All calculations are done by Javascript in this page. Nothing is sent anywhere.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+            <div class="sm:col-span-4">
+                <label for="username" class="block text-sm font-medium text-gray-700">Octopus Electricity Usage CSV</label>
+                <div class="mt-1 flex rounded-md shadow-sm">
+                    <input type="file" id="file" class="focus:ring-indigo-500 focus:border-indigo-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300">
+                </div>
+            </div>
+
+            <div class="sm:col-span-6">
+                <label for="about" class="block text-sm font-medium text-gray-700">Your Storage Capacity (kWh) </label>
+                <div class="mt-1">
+                    <input type="number" id="batteryCapacity" value="7" class="focus:ring-indigo-500 focus:border-indigo-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-gray-300" />
+                </div>
+            </div>
+
+            <div class="sm:col-span-6">
+                <div class="flex justify-start">
+                    <button type="button" onclick="processFile()" class="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">Process</button>
+                </div>
+            </div>
+
+        </div>
+    </form>
+
+    <div class="mt-8">
+        <div class="max-w-6xl   px-4 sm:px-6 lg:px-8">
+            <h2 class="text-lg leading-6 font-medium text-gray-900">Octopus Go (5 hrs @ 8.25p/kWh 19hrs @35.02p/kWh)</h2>
+            <div class="mt-2 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Card -->
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <!--<div class="flex-shrink-0">-->
+                            <!-- Heroicon name: outline/scale -->
+                            <!--<svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                            </svg>
+                        </div>-->
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Total Usage</dt>
+                                    <dd>
+                                        <div class="text-lg font-medium text-gray-900"><span id="totalUsage"></span></div>
+                                    </dd>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Cost</dt>
+                                    <dd>
+                                        <div class="text-lg font-medium text-gray-900"><span id="totalCost"></span></div>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <!--<div class="flex-shrink-0">-->
+                            <!-- Heroicon name: outline/scale -->
+                            <!--<svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                            </svg>
+                        </div>-->
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Peak Usage</dt>
+                                    <dd>
+                                        <div class="text-lg font-medium text-gray-900"><span id="peakUsage"></span></div>
+                                    </dd>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Cost</dt>
+                                    <dd>
+                                        <div class="text-lg font-medium text-gray-900"><span id="peakCost"></span></div>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white overflow-hidden shadow rounded-lg">
+                    <div class="p-5">
+                        <div class="flex items-center">
+                            <!--<div class="flex-shrink-0">-->
+                            <!-- Heroicon name: outline/scale -->
+                            <!--<svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                            </svg>
+                        </div>-->
+                            <div class="ml-5 w-0 flex-1">
+                                <dl>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Off Peak Usage</dt>
+                                    <dd>
+                                        <div class="text-lg font-medium text-gray-900"><span id="offPeakUsage"></span></div>
+                                    </dd>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Cost</dt>
+                                    <dd>
+                                        <div class="text-lg font-medium text-gray-900"><span id="offPeakCost"></span></div>
+                                    </dd>
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- More items... -->
+            </div>
+        </div>
+
+        <div class="mt-8">
+            <div class="max-w-6xl   px-4 sm:px-6 lg:px-8">
+                <h2 class="text-lg leading-6 font-medium text-gray-900">Octopus Flexible @ 27.86p/kWh)</h2>
+                <div class="mt-2 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <!-- Card -->
+
+                    <div class="bg-white overflow-hidden shadow rounded-lg">
+                        <div class="p-5">
+                            <div class="flex items-center">
+                                <!--<div class="flex-shrink-0">-->
+                                <!-- Heroicon name: outline/scale -->
+                                <!--<svg class="h-6 w-6 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                                </svg>
+                            </div>-->
+                                <div class="ml-5 w-0 flex-1">
+                                    <dl>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Total Usage</dt>
+                                        <dd>
+                                            <div class="text-lg font-medium text-gray-900"><span id="totalUsageFlexible"></span></div>
+                                        </dd>
+                                        <dt class="text-sm font-medium text-gray-500 truncate">Cost</dt>
+                                        <dd>
+                                            <div class="text-lg font-medium text-gray-900"><span id="totalCostFlexible"></span></div>
+                                        </dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- More items... -->
+                </div>
+            </div>
+
+            <div class="text-center lg:px-8">
+                <br />
+                <br />
+
+                <table id="consumptionTable" class="min-w-full divide-y divide-gray-300">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Date</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Battery @ SOD</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Off Peak</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Off Peak Total</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Peak</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Total</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Peak From Battery</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Peak From Grid</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Battery @ EOD</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Off Peak Cost</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Peak Cost</th>
+                            <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray">Total Cost</th>
                         </tr>
-                        </thead>
-                <tbody>
-                </tbody>
-            </table>
-</div>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                    </tbody>
+                </table>
+            </div>
 
-<script type="text/javascript">
-    function getBatteryCapacity() {
-        let capacity = parseFloat(document.getElementById('batteryCapacity').value);
-        return capacity;
-    }
-
-    class DailyUsage {
-        constructor(date, usage, currentBatteryCharge) {
-            this.date = date;
-            this.usage = usage;
-            this.currentBatteryCharge = currentBatteryCharge;
-            this.totalHouseConsumption = 0;
-            this.totalHousePeakConsumption = 0;
-            this.totalHouseOffPeakConsumption = 0;
-
-            usage.forEach(e => {
-                this.totalHouseConsumption += e.amount;
-
-                if(e.isOffPeak) {
-                    this.totalHouseOffPeakConsumption += e.amount;
-                } else {
-                    this.totalHousePeakConsumption += e.amount;
-                }
-            });
-
-            console.log("Day " + this.date.toDateString() + " created with " + this.totalHouseConsumption.toFixed(1) + "kWh usage (" + this.totalHouseOffPeakConsumption + " & " + this.totalHousePeakConsumption + ") and " + this.currentBatteryCharge.toFixed(1) + "kWh in the battery");
-        }
-
-        get startingBatteryCharge() {
-            return this.currentBatteryCharge;
-        }
-
-        get batteryChargeRequired() {
-            return getBatteryCapacity() - this.currentBatteryCharge;
-        }
-
-        get totalUsage() {
-            return this.totalHouseConsumption;
-        }
-
-        get peakUsage() {
-             return this.totalHousePeakConsumption;
-        }
-
-        get offPeakUsage() {
-             return this.totalHouseOffPeakConsumption;
-        }
-
-        get totalOffPeakUsage() {
-            return this.offPeakUsage + this.batteryChargeRequired;
-        }
-
-        get peakUsageCoveredByBattery() {
-            if(this.totalHousePeakConsumption < getBatteryCapacity()) {
-                return this.totalHousePeakConsumption;
-            } else {
-                return getBatteryCapacity();
-            }
-        }
-
-        get peakUsageCoveredByGrid() {
-            if(this.totalHousePeakConsumption > getBatteryCapacity()) {
-                return this.totalHousePeakConsumption - getBatteryCapacity();
-            } else {
-                return 0;
-            }
-        }
-
-        get endingBatteryCharge() {
-            if(getBatteryCapacity() > this.totalHousePeakConsumption) {
-                return getBatteryCapacity() - this.totalHousePeakConsumption;
-            } else {
-                return 0;
-            }
-        }
-
-        get totalOffPeakCost() {
-            return this.totalOffPeakUsage * 0.075;
-        }
-
-        get totalPeakCost() {
-            return this.peakUsageCoveredByGrid * 0.302;
-        }
-
-        get totalCost() {
-            return this.totalOffPeakCost + this.totalPeakCost;
-        }
-    }
-
-    class Usage {
-
-        constructor(a, s, e) {
-            this.amount = parseFloat(a);
-            this.startTime = new Date(s.trim());
-            this.endTime = new Date(e.trim());
-        }
-
-        get isOffPeak() {
-            let startMinutes = (this.startTime.getHours() * 60) + this.startTime.getMinutes();
-            let endMinutes = (this.endTime.getHours() * 60) + this.endTime.getMinutes();
-            let isOffPeak = startMinutes >= 30 && startMinutes < 270;
-            
-            return isOffPeak;
-        }
-    }
-
-    function processFile() {
-
-        let usageEntries = new Array();
-
-        var tbodyRef = document.getElementById('consumptionTable').getElementsByTagName('tbody')[0];
-
-        for(var i = 0; i < tbodyRef.rows.length; i++)
-        {
-            tbodyRef.deleteRow(-1);
-        }
-    
-        var element = document.getElementById("file");
-
-        var reader = new FileReader();
-        
-        reader.onload = function(event) {
-
-            var entries = CSVToArray(event.target.result);
-            var passedFirstRow = false;
-
-            var currentDay = null; 
-            var currentDate = new Date();
-            var usagesForCurrentDay = [];
-            var days = [];
-
-            entries.forEach(e => {
-
-                if(!passedFirstRow) {
-                    passedFirstRow = true;
-                    return;
+            <script type="text/javascript">
+                function getBatteryCapacity() {
+                    let capacity = parseFloat(document.getElementById('batteryCapacity').value);
+                    return capacity;
                 }
 
-                if(e.length === 3) {
-                    let usage = new Usage(e[0],e[1],e[2]);
-                    usageEntries.push(usage);
+                class DailyUsage {
+                    constructor(date, usage, currentBatteryCharge) {
+                        this.date = date;
+                        this.usage = usage;
+                        this.currentBatteryCharge = currentBatteryCharge;
+                        this.totalHouseConsumption = 0;
+                        this.totalHousePeakConsumption = 0;
+                        this.totalHouseOffPeakConsumption = 0;
 
-                    let d = new Date(e[1].trim());
-                    let usageDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+                        usage.forEach(e => {
+                            this.totalHouseConsumption += e.amount;
 
-                    usagesForCurrentDay.push(usage);
+                            if (e.isOffPeak) {
+                                this.totalHouseOffPeakConsumption += e.amount;
+                            } else {
+                                this.totalHousePeakConsumption += e.amount;
+                            }
+                        });
 
-                    if(currentDate.getTime() !== usageDate.getTime()) {
-                        currentDate = usageDate;
-                        
-                        if(currentDay !== null) {
-                            // Log this info to a table
-                            //
-                            var tbodyRef = document.getElementById('consumptionTable').getElementsByTagName('tbody')[0];
+                        console.log("Day " + this.date.toDateString() + " created with " + this.totalHouseConsumption.toFixed(1) + "kWh usage (" + this.totalHouseOffPeakConsumption + " & " + this.totalHousePeakConsumption + ") and " + this.currentBatteryCharge.toFixed(1) + "kWh in the battery");
+                    }
 
-                            var row = tbodyRef.insertRow();
-                            
-                            var cell1 = row.insertCell();
-                            var cell2 = row.insertCell();
-                            var cell3 = row.insertCell();
-                            var cell4 = row.insertCell();
-                            var cell5 = row.insertCell();
-                            var cell6 = row.insertCell();
-                            var cell7 = row.insertCell();
-                            var cell8 = row.insertCell();
-                            var cell9 = row.insertCell();
-                            var cell10 = row.insertCell();
-                            var cell11 = row.insertCell();
-                            var cell12 = row.insertCell();
-                            
-                            cell1.innerHTML = currentDate.toDateString();
-                            cell2.innerHTML = currentDay.startingBatteryCharge.toFixed(1);
-                            cell3.innerHTML = currentDay.offPeakUsage.toFixed(1);
-                            cell4.innerHTML = currentDay.totalOffPeakUsage.toFixed(1);
-                            cell5.innerHTML = currentDay.peakUsage.toFixed(1);
-                            cell6.innerHTML = currentDay.totalUsage.toFixed(1);
-                            cell7.innerHTML = currentDay.peakUsageCoveredByBattery.toFixed(1); // TODO Add a percentage
-                            cell8.innerHTML = currentDay.peakUsageCoveredByGrid.toFixed(1); // TODO Add a percentage
-                            cell9.innerHTML = currentDay.endingBatteryCharge.toFixed(1);
-                            cell10.innerHTML = "£" + currentDay.totalOffPeakCost.toFixed(2);
-                            cell11.innerHTML = "£" + currentDay.totalPeakCost.toFixed(2);
-                            cell12.innerHTML = "£" + currentDay.totalCost.toFixed(2);
+                    get startingBatteryCharge() {
+                        return this.currentBatteryCharge;
+                    }
 
-                            // Record the day and create a new one. Reset everything.
-                            //
-                            days.push(currentDay)
+                    get batteryChargeRequired() {
+                        return getBatteryCapacity() - this.currentBatteryCharge;
+                    }
+
+                    get totalUsage() {
+                        return this.totalHouseConsumption;
+                    }
+
+                    get peakUsage() {
+                        return this.totalHousePeakConsumption;
+                    }
+
+                    get offPeakUsage() {
+                        return this.totalHouseOffPeakConsumption;
+                    }
+
+                    get totalOffPeakUsage() {
+                        return this.offPeakUsage + this.batteryChargeRequired;
+                    }
+
+                    get peakUsageCoveredByBattery() {
+                        if (this.totalHousePeakConsumption < getBatteryCapacity()) {
+                            return this.totalHousePeakConsumption;
+                        } else {
+                            return getBatteryCapacity();
                         }
-                        
-                        currentDay = new DailyUsage(currentDate, usagesForCurrentDay, currentDay == null ? 0 : currentDay.endingBatteryCharge);
-                        usagesForCurrentDay = [];
-                    } 
+                    }
+
+                    get peakUsageCoveredByGrid() {
+                        if (this.totalHousePeakConsumption > getBatteryCapacity()) {
+                            return this.totalHousePeakConsumption - getBatteryCapacity();
+                        } else {
+                            return 0;
+                        }
+                    }
+
+                    get endingBatteryCharge() {
+                        if (getBatteryCapacity() > this.totalHousePeakConsumption) {
+                            return getBatteryCapacity() - this.totalHousePeakConsumption;
+                        } else {
+                            return 0;
+                        }
+                    }
+
+                    get totalOffPeakCost() {
+                        return this.totalOffPeakUsage * 0.0825;
+                    }
+
+                    get totalPeakCost() {
+                        return this.peakUsageCoveredByGrid * 0.3505;
+                    }
+
+                    get totalCost() {
+                        return this.totalOffPeakCost + this.totalPeakCost;
+                    }
                 }
-            });
 
-            var runningTotal = 0;
-            var offPeakTotal = 0;
-            var peakTotal = 0;
-            var totalCost = 0;
-            var totalOffPeakCost = 0;
-            var totalPeakCost = 0;
+                class Usage {
 
-            days.forEach(d => {
-                    runningTotal += d.totalUsage;
-                    offPeakTotal += d.totalOffPeakUsage;
-                    peakTotal += d.peakUsageCoveredByGrid;
-                    totalCost += d.totalCost;
-                    totalOffPeakCost += d.totalOffPeakCost;
-                    totalPeakCost += d.totalPeakCost;
-            });
+                    constructor(a, s, e) {
+                        this.amount = parseFloat(a);
+                        this.startTime = new Date(s.trim());
+                        this.endTime = new Date(e.trim());
+                    }
 
-            document.getElementById("totalUsage").innerText = Math.round(runningTotal) + "kWh";
-            document.getElementById("offPeakUsage").innerText = Math.round(offPeakTotal) + "kWh";
-            document.getElementById("peakUsage").innerText = Math.round(peakTotal) + "kWh";
-            document.getElementById("totalCost").innerText = "£" + totalCost.toFixed(2);
-            document.getElementById("offPeakCost").innerText = "£" + totalOffPeakCost.toFixed(2);
-            document.getElementById("peakCost").innerText = "£" + totalPeakCost.toFixed(2);
+                    get isOffPeak() {
+                        let startMinutes = (this.startTime.getHours() * 60) + this.startTime.getMinutes();
 
-            document.getElementById("startDate").innerText = days[0].date.toDateString();
-            document.getElementById("endDate").innerText = days[days.length - 1].date.toDateString();
-            document.getElementById("dayCount").innerText = days.length;
+                        // 00:30 to 04:30
+                        let isOffPeak = startMinutes >= 30 && startMinutes < 300;
 
-        };
+                        return isOffPeak;
+                    }
+                }
 
-        reader.readAsText(element.files[0]);
-    }
+                function processFile() {
 
-    // ref: http://stackoverflow.com/a/1293163/2343
-    // This will parse a delimited string into an array of
-    // arrays. The default delimiter is the comma, but this
-    // can be overriden in the second argument.
-    function CSVToArray(strData, strDelimiter){
-        // Check to see if the delimiter is defined. If not,
-        // then default to comma.
-        strDelimiter = (strDelimiter || ",");
+                    let usageEntries = new Array();
 
-        // Create a regular expression to parse the CSV values.
-        var objPattern = new RegExp(
-            (
-                // Delimiters.
-                "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+                    var tbodyRef = document.getElementById('consumptionTable').getElementsByTagName('tbody')[0];
 
-                // Quoted fields.
-                "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+                    for (var i = 0; i < tbodyRef.rows.length; i++) {
+                        tbodyRef.deleteRow(-1);
+                    }
 
-                // Standard fields.
-                "([^\"\\" + strDelimiter + "\\r\\n]*))"
-            ),
-            "gi"
-            );
+                    var element = document.getElementById("file");
 
+                    var reader = new FileReader();
 
-        // Create an array to hold our data. Give the array
-        // a default empty first row.
-        var arrData = [[]];
+                    reader.onload = function (event) {
 
-        // Create an array to hold our individual pattern
-        // matching groups.
-        var arrMatches = null;
+                        var entries = CSVToArray(event.target.result);
+                        var passedFirstRow = false;
 
+                        var currentDay = null;
+                        var currentDate = new Date();
+                        var usagesForCurrentDay = [];
+                        var days = [];
 
-        // Keep looping over the regular expression matches
-        // until we can no longer find a match.
-        while (arrMatches = objPattern.exec( strData )){
+                        entries.forEach(e => {
 
-            // Get the delimiter that was found.
-            var strMatchedDelimiter = arrMatches[ 1 ];
+                            if (!passedFirstRow) {
+                                passedFirstRow = true;
+                                return;
+                            }
 
-            // Check to see if the given delimiter has a length
-            // (is not the start of string) and if it matches
-            // field delimiter. If id does not, then we know
-            // that this delimiter is a row delimiter.
-            if (
-                strMatchedDelimiter.length &&
-                strMatchedDelimiter !== strDelimiter
-                ){
+                            if (e.length === 3) {
+                                let usage = new Usage(e[0], e[1], e[2]);
+                                usageEntries.push(usage);
 
-                // Since we have reached a new row of data,
-                // add an empty row to our data array.
-                arrData.push( [] );
+                                let d = new Date(e[1].trim());
+                                let usageDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-            }
+                                usagesForCurrentDay.push(usage);
 
-            var strMatchedValue;
+                                if (currentDate.getTime() !== usageDate.getTime()) {
+                                    currentDate = usageDate;
 
-            // Now that we have our delimiter out of the way,
-            // let's check to see which kind of value we
-            // captured (quoted or unquoted).
-            if (arrMatches[ 2 ]){
+                                    if (currentDay !== null) {
+                                        // Log this info to a table
+                                        //
+                                        var tbodyRef = document.getElementById('consumptionTable').getElementsByTagName('tbody')[0];
 
-                // We found a quoted value. When we capture
-                // this value, unescape any double quotes.
-                strMatchedValue = arrMatches[ 2 ].replace(
-                    new RegExp( "\"\"", "g" ),
-                    "\""
+                                        var row = tbodyRef.insertRow();
+                                        row.className = "whitespace-nowrap px-3 py-4 text-sm text-gray-500";
+
+                                        var cell1 = row.insertCell();
+                                        var cell2 = row.insertCell();
+                                        var cell3 = row.insertCell();
+                                        var cell4 = row.insertCell();
+                                        var cell5 = row.insertCell();
+                                        var cell6 = row.insertCell();
+                                        var cell7 = row.insertCell();
+                                        var cell8 = row.insertCell();
+                                        var cell9 = row.insertCell();
+                                        var cell10 = row.insertCell();
+                                        var cell11 = row.insertCell();
+                                        var cell12 = row.insertCell();
+
+                                        cell1.innerHTML = currentDate.toDateString();
+                                        cell2.innerHTML = currentDay.startingBatteryCharge.toFixed(1);
+                                        cell3.innerHTML = currentDay.offPeakUsage.toFixed(1);
+                                        cell4.innerHTML = currentDay.totalOffPeakUsage.toFixed(1);
+                                        cell5.innerHTML = currentDay.peakUsage.toFixed(1);
+                                        cell6.innerHTML = currentDay.totalUsage.toFixed(1);
+                                        cell7.innerHTML = currentDay.peakUsageCoveredByBattery.toFixed(1); // TODO Add a percentage
+                                        cell8.innerHTML = currentDay.peakUsageCoveredByGrid.toFixed(1); // TODO Add a percentage
+                                        cell9.innerHTML = currentDay.endingBatteryCharge.toFixed(1);
+                                        cell10.innerHTML = "£" + currentDay.totalOffPeakCost.toFixed(2);
+                                        cell11.innerHTML = "£" + currentDay.totalPeakCost.toFixed(2);
+                                        cell12.innerHTML = "£" + currentDay.totalCost.toFixed(2);
+
+                                        // Record the day and create a new one. Reset everything.
+                                        //
+                                        days.push(currentDay)
+                                    }
+
+                                    currentDay = new DailyUsage(currentDate, usagesForCurrentDay, currentDay == null ? 0 : currentDay.endingBatteryCharge);
+                                    usagesForCurrentDay = [];
+                                }
+                            }
+                        });
+
+                        var runningTotal = 0;
+                        var offPeakTotal = 0;
+                        var peakTotal = 0;
+                        var totalCost = 0;
+                        var totalOffPeakCost = 0;
+                        var totalPeakCost = 0;
+
+                        days.forEach(d => {
+                            runningTotal += d.totalUsage;
+                            offPeakTotal += d.totalOffPeakUsage;
+                            peakTotal += d.peakUsageCoveredByGrid;
+                            totalCost += d.totalCost;
+                            totalOffPeakCost += d.totalOffPeakCost;
+                            totalPeakCost += d.totalPeakCost;
+                        });
+
+                        document.getElementById("totalUsage").innerText = Math.round(runningTotal) + "kWh";
+                        document.getElementById("offPeakUsage").innerText = Math.round(offPeakTotal) + "kWh";
+                        document.getElementById("peakUsage").innerText = Math.round(peakTotal) + "kWh";
+                        document.getElementById("totalCost").innerText = "£" + totalCost.toFixed(2);
+                        document.getElementById("offPeakCost").innerText = "£" + totalOffPeakCost.toFixed(2);
+                        document.getElementById("peakCost").innerText = "£" + totalPeakCost.toFixed(2);
+
+                        document.getElementById("totalUsageFlexible").innerText = Math.round(runningTotal) + "kWh";
+                        document.getElementById("totalCostFlexible").innerText = "£" + Math.round(runningTotal) * 0.2786;
+
+                        document.getElementById("startDate").innerText = days[0].date.toDateString();
+                        document.getElementById("endDate").innerText = days[days.length - 1].date.toDateString();
+                        document.getElementById("dayCount").innerText = days.length;
+
+                    };
+
+                    reader.readAsText(element.files[0]);
+                }
+
+                // ref: http://stackoverflow.com/a/1293163/2343
+                // This will parse a delimited string into an array of
+                // arrays. The default delimiter is the comma, but this
+                // can be overriden in the second argument.
+                function CSVToArray(strData, strDelimiter) {
+                    // Check to see if the delimiter is defined. If not,
+                    // then default to comma.
+                    strDelimiter = (strDelimiter || ",");
+
+                    // Create a regular expression to parse the CSV values.
+                    var objPattern = new RegExp(
+                        (
+                            // Delimiters.
+                            "(\\" + strDelimiter + "|\\r?\\n|\\r|^)" +
+
+                            // Quoted fields.
+                            "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+
+                            // Standard fields.
+                            "([^\"\\" + strDelimiter + "\\r\\n]*))"
+                        ),
+                        "gi"
                     );
 
-            } else {
 
-                // We found a non-quoted value.
-                strMatchedValue = arrMatches[ 3 ];
+                    // Create an array to hold our data. Give the array
+                    // a default empty first row.
+                    var arrData = [[]];
 
-            }
+                    // Create an array to hold our individual pattern
+                    // matching groups.
+                    var arrMatches = null;
 
 
-            // Now that we have our value string, let's add
-            // it to the data array.
-            arrData[ arrData.length - 1 ].push( strMatchedValue );
-        }
+                    // Keep looping over the regular expression matches
+                    // until we can no longer find a match.
+                    while (arrMatches = objPattern.exec(strData)) {
 
-        // Return the parsed data.
-        return( arrData );
-    }
+                        // Get the delimiter that was found.
+                        var strMatchedDelimiter = arrMatches[1];
 
-</script>
+                        // Check to see if the given delimiter has a length
+                        // (is not the start of string) and if it matches
+                        // field delimiter. If id does not, then we know
+                        // that this delimiter is a row delimiter.
+                        if (
+                            strMatchedDelimiter.length &&
+                            strMatchedDelimiter !== strDelimiter
+                        ) {
 
-<body>
-    </html>
+                            // Since we have reached a new row of data,
+                            // add an empty row to our data array.
+                            arrData.push([]);
+
+                        }
+
+                        var strMatchedValue;
+
+                        // Now that we have our delimiter out of the way,
+                        // let's check to see which kind of value we
+                        // captured (quoted or unquoted).
+                        if (arrMatches[2]) {
+
+                            // We found a quoted value. When we capture
+                            // this value, unescape any double quotes.
+                            strMatchedValue = arrMatches[2].replace(
+                                new RegExp("\"\"", "g"),
+                                "\""
+                            );
+
+                        } else {
+
+                            // We found a non-quoted value.
+                            strMatchedValue = arrMatches[3];
+
+                        }
+
+
+                        // Now that we have our value string, let's add
+                        // it to the data array.
+                        arrData[arrData.length - 1].push(strMatchedValue);
+                    }
+
+                    // Return the parsed data.
+                    return (arrData);
+                }
+
+            </script>
+
+</body>
+</html>
